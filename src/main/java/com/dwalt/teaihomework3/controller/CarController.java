@@ -16,7 +16,7 @@ import java.util.Optional;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @RestController
-@RequestMapping("/cars")
+@RequestMapping(value = "/cars", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
 public class CarController {
     private CarService carService;
 
@@ -25,34 +25,29 @@ public class CarController {
         this.carService = carService;
     }
 
-    @GetMapping(produces = {
-            MediaType.APPLICATION_JSON_VALUE,
-            MediaType.APPLICATION_XML_VALUE})
+    @GetMapping
     public ResponseEntity<CollectionModel<Car>> getAll() {
         List<Car> cars = carService.getAllCarsList();
+        cars.forEach(car -> car.addIf(!car.hasLinks(), () -> linkTo(CarController.class).slash(car.getId()).withSelfRel()));
         if (cars.size() != 0) {
-            cars.forEach(car -> car.add(linkTo(CarController.class).slash(car.getId()).withSelfRel()));
             CollectionModel<Car> collectionModel = new CollectionModel<>(cars, linkTo(CarController.class).withSelfRel());
             return new ResponseEntity<>(collectionModel, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping(value = "/{id}", produces = {
-            MediaType.APPLICATION_JSON_VALUE,
-            MediaType.APPLICATION_XML_VALUE})
+    @GetMapping("/{id}")
     public ResponseEntity<Car> getById(@PathVariable Long id) {
         Optional<Car> carById = carService.findCarById(id);
         if (carById.isPresent()) {
-            carById.get().add(linkTo(CarController.class).slash(id).withSelfRel());
+            carById.get().addIf(!carById.get().hasLinks(), () -> linkTo(CarController.class).slash(id).withSelfRel());
             return new ResponseEntity<>(carById.get(), HttpStatus.OK);
+
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping(value = "/colour", produces = {
-            MediaType.APPLICATION_JSON_VALUE,
-            MediaType.APPLICATION_XML_VALUE})
+    @GetMapping("/colour")
     public ResponseEntity<List<Car>> getByColour(@RequestParam String colour) {
         List<Car> carsByColour = carService.findCarsByColour(colour);
         if (carsByColour.size() != 0) {
@@ -81,9 +76,7 @@ public class CarController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @PatchMapping(value = "/colour/{id}", produces = {
-            MediaType.APPLICATION_JSON_VALUE,
-            MediaType.APPLICATION_XML_VALUE})
+    @PatchMapping("/colour/{id}")
     public ResponseEntity<Car> updateColour(@PathVariable Long id, @RequestParam String newColour) {
         Optional<Car> carById = carService.findCarById(id);
         if (carById.isPresent()) {
