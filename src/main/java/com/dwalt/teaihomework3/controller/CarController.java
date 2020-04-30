@@ -4,6 +4,7 @@ import com.dwalt.teaihomework3.model.Car;
 import com.dwalt.teaihomework3.model.Colour;
 import com.dwalt.teaihomework3.service.CarService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,15 +22,15 @@ public class CarController {
     private CarService carService;
 
     @Autowired
-    public CarController(CarService carService) {
+    public CarController(@Qualifier("carServiceImpl") CarService carService) {
         this.carService = carService;
     }
 
     @GetMapping
     public ResponseEntity<CollectionModel<Car>> getAll() {
         List<Car> cars = carService.getAllCarsList();
-        cars.forEach(car -> car.addIf(!car.hasLinks(), () -> linkTo(CarController.class).slash(car.getId()).withSelfRel()));
-        if (cars.size() != 0) {
+        if (!cars.isEmpty()) {
+            cars.forEach(car -> car.addIf(!car.hasLinks(), () -> linkTo(CarController.class).slash(car.getId()).withSelfRel()));
             CollectionModel<Car> collectionModel = new CollectionModel<>(cars, linkTo(CarController.class).withSelfRel());
             return new ResponseEntity<>(collectionModel, HttpStatus.OK);
         }
@@ -39,18 +40,17 @@ public class CarController {
     @GetMapping("/{id}")
     public ResponseEntity<Car> getById(@PathVariable Long id) {
         Optional<Car> carById = carService.findCarById(id);
-        if (carById.isPresent()) {
-            carById.get().addIf(!carById.get().hasLinks(), () -> linkTo(CarController.class).slash(id).withSelfRel());
-            return new ResponseEntity<>(carById.get(), HttpStatus.OK);
-
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        return carById.map(car -> {
+            car.addIf(!carById.get().hasLinks(), () -> linkTo(CarController.class).slash(id).withSelfRel());
+            return new ResponseEntity<>(car, HttpStatus.OK);
+        })
+                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @GetMapping("/colour")
     public ResponseEntity<List<Car>> getByColour(@RequestParam String colour) {
         List<Car> carsByColour = carService.findCarsByColour(colour);
-        if (carsByColour.size() != 0) {
+        if (!carsByColour.isEmpty()) {
             return new ResponseEntity<>(carsByColour, HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
