@@ -65,7 +65,7 @@ public class CarController {
         boolean add = carService.save(car);
         if (add) {
             System.out.println(car);
-            LOGGER.info("dodalo do bazy" + car.getMake());
+            LOGGER.info("Added to database" + car);
             return new ResponseEntity<>(HttpStatus.CREATED);
         }
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
