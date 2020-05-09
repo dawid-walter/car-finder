@@ -3,6 +3,8 @@ package com.dwalt.teaihomework3.controller;
 import com.dwalt.teaihomework3.model.Car;
 import com.dwalt.teaihomework3.model.Colour;
 import com.dwalt.teaihomework3.service.CarService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.hateoas.CollectionModel;
@@ -18,8 +20,10 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @RestController
 @RequestMapping(value = "/cars", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class CarController {
     private CarService carService;
+    private final Logger LOGGER = LoggerFactory.getLogger(CarController.class);
 
     @Autowired
     public CarController(@Qualifier("carServiceImpl") CarService carService) {
@@ -60,6 +64,8 @@ public class CarController {
     public ResponseEntity<?> add(@RequestBody Car car) {
         boolean add = carService.save(car);
         if (add) {
+            System.out.println(car);
+            LOGGER.info("dodalo do bazy" + car.getMake());
             return new ResponseEntity<>(HttpStatus.CREATED);
         }
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -88,7 +94,7 @@ public class CarController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         boolean deleted = carService.removeCarById(id);
         if (deleted) {
